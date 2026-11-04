@@ -29,7 +29,7 @@ public final class TouchpadView extends View {
     private final Runnable longPress = () -> {
         if (touching && !moved) {
             longFired = true;
-            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            Feedback.longPress(this);
             if (listener != null) listener.onLongKey(KeyEvent.KEYCODE_DPAD_CENTER);
         }
     };
@@ -64,7 +64,7 @@ public final class TouchpadView extends View {
     }
 
     private void emit(int key) {
-        performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        Feedback.tick(this);
         if (listener != null) listener.onKey(key);
     }
 

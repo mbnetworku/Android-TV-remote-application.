@@ -55,8 +55,8 @@ Key presses arrive in about **16 ms**, close to a real remote.
 </td>
 <td>
 
-### ⭐ Favorite apps
-Pin YouTube, Netflix or anything else and **open it with one tap.**
+### ⭐ Favorite apps with real icons
+Pick any app installed on your TV. It shows with its **real icon**, one tap opens it.
 
 </td>
 </tr>
@@ -77,8 +77,8 @@ Swipe like a laptop touchpad, or use the classic round D-pad.
 <tr>
 <td>
 
-### 🔊 Volume keys work
-Your phone's **volume buttons** change the TV volume.
+### 🔊 See the TV volume
+The remote shows the **TV volume in %**. Tap it for a slider, or use **+ / −** and your phone's volume buttons.
 
 </td>
 <td>
@@ -143,6 +143,8 @@ Needs **Android 8.0** or newer.
 | ▦ **Apps** | Open any app · **hold** an app to add it to ★ favorites |
 | ★ **Favorite** | Opens that app · hold to remove |
 | ⌨️ **Keyboard** | Types on the TV while you type on the phone |
+| 🔊 **VOL %** label | Tap for a volume slider |
+| 🎚️ **Settings button** | Turn vibration and tick sound on or off |
 
 **Status dots:** 🟢 connected · 🟠 connecting · ⚪ offline
 

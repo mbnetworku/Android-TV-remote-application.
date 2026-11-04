@@ -159,7 +159,7 @@
             android:orientation="vertical">
 
             <TextView android:id="@+id/volUp" style="@style/RockerKey" android:contentDescription="Volume up" android:text="+" />
-            <TextView style="@style/RockerLabel" android:text="VOL" />
+            <TextView android:id="@+id/volLabel" style="@style/RockerLabel" android:gravity="center" android:padding="4dp" android:text="VOL" />
             <TextView android:id="@+id/volDown" style="@style/RockerKey" android:contentDescription="Volume down" android:text="−" />
         </LinearLayout>
 
@@ -214,7 +214,7 @@
         <LinearLayout
             android:id="@+id/favRow"
             android:layout_width="wrap_content"
-            android:layout_height="44dp"
+            android:layout_height="wrap_content"
             android:orientation="horizontal" />
     </HorizontalScrollView>
 
@@ -228,6 +228,7 @@
         <ImageButton android:id="@+id/btnKeyboard" style="@style/RemoteBtn" android:contentDescription="Keyboard" android:src="@drawable/ic_keyboard" />
         <ImageButton android:id="@+id/btnApps" style="@style/RemoteBtn" android:contentDescription="Apps" android:src="@drawable/ic_apps" />
         <ImageButton android:id="@+id/btnPadMode" style="@style/RemoteBtn" android:contentDescription="Switch to touchpad" android:src="@drawable/ic_touchpad" />
+        <ImageButton android:id="@+id/btnPrefs" style="@style/RemoteBtn" android:contentDescription="App settings" android:src="@drawable/ic_tune" />
     </LinearLayout>
 </LinearLayout>
 </FrameLayout>

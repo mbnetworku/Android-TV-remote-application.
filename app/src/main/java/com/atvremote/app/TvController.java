@@ -52,7 +52,8 @@ public final class TvController {
     public static final class TvApp {
         public final String component;
         public final String packageName;
-        public final String label;
+        public String label;
+        public android.graphics.Bitmap icon;
 
         public TvApp(String component, String packageName, String label) {
             this.component = component;
@@ -123,6 +124,7 @@ public final class TvController {
                 startInput(c, gen);
                 if (gen != generation) return;
                 setState(gen, State.CONNECTED, model != null ? model : host, "Connected");
+                requestVolume();
             } catch (Exception e) {
                 Log.w(TAG, "connect failed", e);
                 if (c != null) c.close();
@@ -215,15 +217,62 @@ public final class TvController {
     /** Keeps reading a stream's output so the TV never blocks on a full pipe. */
     private void drain(AdbStream s) {
         bg.execute(() -> {
+            StringBuilder buf = new StringBuilder();
             try {
                 byte[] d;
                 while ((d = s.read()) != null) {
-                    String text = new String(d, StandardCharsets.UTF_8).trim();
-                    if (text.contains("ERR")) Log.w(TAG, "TV: " + text);
+                    buf.append(new String(d, StandardCharsets.UTF_8));
+                    int nl;
+                    while ((nl = buf.indexOf("\n")) >= 0) {
+                        String line = buf.substring(0, nl).trim();
+                        buf.delete(0, nl + 1);
+                        if (line.startsWith("VOL ")) {
+                            String[] p = line.split(" ");
+                            try {
+                                volume = Integer.parseInt(p[1]);
+                                volumeMax = Integer.parseInt(p[2]);
+                                notifyListener(state, lastTitle, lastDetail);
+                            } catch (RuntimeException ignored) {
+                            }
+                        } else if (line.startsWith("ERR")) {
+                            Log.w(TAG, "TV: " + line);
+                        }
+                    }
+                    if (buf.length() > 8192) buf.setLength(0);
                 }
             } catch (IOException ignored) {
             }
         });
+    }
+
+    // ---------------------------------------------------------------- volume
+
+    private volatile int volume = -1;
+    private volatile int volumeMax = -1;
+
+    /** Current TV volume in percent, or -1 if unknown (e.g. helper not running). */
+    public int getVolumePercent() {
+        return volumeMax > 0 && volume >= 0 ? Math.round(volume * 100f / volumeMax) : -1;
+    }
+
+    public int getVolumeStep() {
+        return volume;
+    }
+
+    public int getVolumeMax() {
+        return volumeMax;
+    }
+
+    public boolean supportsVolume() {
+        return !fallbackInput;
+    }
+
+    public void requestVolume() {
+        if (!fallbackInput) sendLine("v");
+    }
+
+    public void setVolumeStep(int step) {
+        if (!fallbackInput) sendLine("s " + step);
     }
 
     // ---------------------------------------------------------------- input
@@ -278,8 +327,13 @@ public final class TvController {
                         String pkg = m.group(1);
                         if (!seen.add(pkg)) continue;
                         String cls = m.group(2);
-                        apps.add(new TvApp(pkg + "/" + cls, pkg, prettyName(pkg)));
+                        TvApp app = new TvApp(pkg + "/" + cls, pkg, prettyName(pkg));
+                        String cachedLabel = cachedLabel(ctx, pkg);
+                        if (cachedLabel != null) app.label = cachedLabel;
+                        app.icon = cachedIcon(ctx, pkg);
+                        apps.add(app);
                     }
+                    fetchNamesAndIcons(c, apps);
                     Collections.sort(apps, (a, b) -> a.label.compareToIgnoreCase(b.label));
                 } catch (IOException e) {
                     Log.w(TAG, "app list failed", e);
@@ -287,6 +341,55 @@ public final class TvController {
             }
             main.post(() -> callback.accept(apps));
         });
+    }
+
+    /** Asks the helper on the TV for real app names and icons; caches them on the phone. */
+    private void fetchNamesAndIcons(AdbConnection c, List<TvApp> apps) {
+        if (fallbackInput || apps.isEmpty()) return;
+        StringBuilder cmd = new StringBuilder("CLASSPATH=" + REMOTE_APK + " app_process / " + INJECTOR_CLASS + " apps");
+        for (TvApp a : apps) cmd.append(' ').append(a.packageName);
+        String out;
+        try {
+            out = c.shell(cmd.toString(), 30000);
+        } catch (IOException e) {
+            Log.w(TAG, "icon fetch failed", e);
+            return;
+        }
+        Map<String, TvApp> byPkg = new HashMap<>();
+        for (TvApp a : apps) byPkg.put(a.packageName, a);
+        for (String line : out.split("\n")) {
+            if (!line.startsWith("APP ")) continue;
+            String[] p = line.substring(4).trim().split("\t");
+            if (p.length < 3) continue;
+            TvApp a = byPkg.get(p[0]);
+            if (a == null) continue;
+            try {
+                byte[] png = android.util.Base64.decode(p[2], android.util.Base64.DEFAULT);
+                android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeByteArray(png, 0, png.length);
+                if (bmp != null) a.icon = bmp;
+                if (!p[1].isEmpty()) a.label = p[1];
+                File dir = new File(ctx.getFilesDir(), "icons");
+                dir.mkdirs();
+                Files.write(new File(dir, a.packageName + ".png").toPath(), png);
+                Files.write(new File(dir, a.packageName + ".txt").toPath(), a.label.getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                Log.w(TAG, "bad icon for " + p[0], e);
+            }
+        }
+    }
+
+    public static android.graphics.Bitmap cachedIcon(Context ctx, String pkg) {
+        File f = new File(new File(ctx.getFilesDir(), "icons"), pkg + ".png");
+        return f.isFile() ? android.graphics.BitmapFactory.decodeFile(f.getPath()) : null;
+    }
+
+    static String cachedLabel(Context ctx, String pkg) {
+        try {
+            File f = new File(new File(ctx.getFilesDir(), "icons"), pkg + ".txt");
+            return f.isFile() ? new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8).trim() : null;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public void launchApp(TvApp app) {

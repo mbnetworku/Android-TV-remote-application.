@@ -54,7 +54,7 @@ public final class DpadView extends View {
     private final Runnable longPress = () -> {
         if (pressed == CENTER) {
             longFired = true;
-            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            Feedback.longPress(this);
             if (listener != null) listener.onLongKey(CENTER);
         }
     };
@@ -162,7 +162,7 @@ public final class DpadView extends View {
                 int zone = hit(e.getX(), e.getY());
                 if (zone == NONE) return false;
                 pressed = zone;
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                Feedback.tap(this);
                 if (zone == CENTER) {
                     longFired = false;
                     postDelayed(longPress, 550);

@@ -28,7 +28,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.widget.FrameLayout;
+
 import com.atvremote.app.ui.DpadView;
+import com.atvremote.app.ui.Feedback;
 import com.atvremote.app.ui.TouchpadView;
 
 import java.util.ArrayList;
@@ -77,6 +80,7 @@ public final class MainActivity extends Activity {
         touchpad = findViewById(R.id.touchpad);
         padMode = findViewById(R.id.btnPadMode);
 
+        Feedback.init(this, prefs);
         setUpHeaderSwipe();
 
         bindKey(R.id.btnPower, KeyEvent.KEYCODE_POWER);
@@ -113,6 +117,11 @@ public final class MainActivity extends Activity {
         findViewById(R.id.btnKeyboard).setOnClickListener(v -> {
             if (ensureConnected()) showKeyboard();
         });
+        findViewById(R.id.btnPrefs).setOnClickListener(v -> {
+            Feedback.tap(v);
+            showSettings();
+        });
+        findViewById(R.id.volLabel).setOnClickListener(v -> showVolumeSlider());
         findViewById(R.id.btnApps).setOnClickListener(v -> {
             if (ensureConnected()) showApps();
         });
@@ -186,7 +195,7 @@ public final class MainActivity extends Activity {
         tv = controllerFor(d);
         connectIfIdle(d);
         render();
-        if (changed) deviceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+        if (changed) Feedback.tap(deviceButton);
     }
 
     private void removeDevice(int index) {
@@ -314,6 +323,7 @@ public final class MainActivity extends Activity {
         else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         renderDots();
         renderFavorites();
+        renderVolume();
     }
 
     // ---------------------------------------------------------------- favorites (saved per TV)
@@ -373,12 +383,25 @@ public final class MainActivity extends Activity {
         scroll.setVisibility(favs.isEmpty() ? View.GONE : View.VISIBLE);
         for (String[] f : favs) {
             TvController.TvApp app = new TvController.TvApp(f[0], f[0].split("/")[0], f[1]);
-            TextView chip = text("★  " + app.label, 14, 0xFFECEFF4);
-            chip.setGravity(Gravity.CENTER);
-            chip.setBackgroundResource(R.drawable.btn_pill);
-            chip.setPadding(dp(18), 0, dp(18), 0);
+            app.icon = TvController.cachedIcon(this, app.packageName);
+            // Tile: app icon in a glass circle, short name underneath.
+            LinearLayout chip = new LinearLayout(this);
+            chip.setOrientation(LinearLayout.VERTICAL);
+            chip.setGravity(Gravity.CENTER_HORIZONTAL);
+            chip.setContentDescription("Open " + app.label);
+            FrameLayout circle = new FrameLayout(this);
+            circle.setBackgroundResource(R.drawable.btn_round);
+            View icon = appIcon(app, 34);
+            circle.addView(icon, new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER));
+            chip.addView(circle, new LinearLayout.LayoutParams(dp(56), dp(56)));
+            TextView name = text(app.label, 11, 0xFFC9CFDA);
+            name.setSingleLine(true);
+            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            name.setMaxWidth(dp(68));
+            name.setPadding(0, dp(4), 0, 0);
+            chip.addView(name);
             chip.setOnClickListener(v -> {
-                v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                Feedback.tap(v);
                 if (ensureConnected()) {
                     tv.launchApp(app);
                     Toast.makeText(this, "Opening " + app.label, Toast.LENGTH_SHORT).show();
@@ -391,11 +414,108 @@ public final class MainActivity extends Activity {
                         .show();
                 return true;
             });
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(68), ViewGroup.LayoutParams.WRAP_CONTENT);
             lp.setMargins(dp(4), 0, dp(4), 0);
             row.addView(chip, lp);
         }
+    }
+
+    /** The app's real icon from the TV, or a letter badge until it has been fetched. */
+    private View appIcon(TvController.TvApp app, int sizeDp) {
+        if (app.icon != null) {
+            android.widget.ImageView iv = new android.widget.ImageView(this);
+            iv.setImageBitmap(app.icon);
+            iv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            return iv;
+        }
+        TextView letter = text(app.label.isEmpty() ? "?" : app.label.substring(0, 1).toUpperCase(), 16, 0xFFFFFFFF);
+        letter.setGravity(Gravity.CENTER);
+        letter.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        GradientDrawable g = new GradientDrawable();
+        g.setShape(GradientDrawable.OVAL);
+        g.setColor(0x33FFFFFF);
+        letter.setBackground(g);
+        return letter;
+    }
+
+    // ---------------------------------------------------------------- volume
+
+    private final Runnable volumeRefresh = () -> {
+        if (tv != null) tv.requestVolume();
+    };
+
+    private void renderVolume() {
+        TextView label = findViewById(R.id.volLabel);
+        int pct = tv == null || !tv.isConnected() ? -1 : tv.getVolumePercent();
+        label.setText(pct < 0 ? "VOL" : "VOL\n" + pct + "%");
+    }
+
+    /** Slider for setting an exact TV volume. */
+    private void showVolumeSlider() {
+        if (!ensureConnected()) return;
+        if (!tv.supportsVolume() || tv.getVolumeMax() <= 0) {
+            Toast.makeText(this, "This TV doesn't report its volume", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final TvController target = tv;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(24), dp(16), dp(24), dp(8));
+        TextView pct = text(target.getVolumePercent() + "%", 32, 0xFFECEFF4);
+        pct.setGravity(Gravity.CENTER);
+        box.addView(pct);
+        android.widget.SeekBar bar = new android.widget.SeekBar(this);
+        bar.setMax(target.getVolumeMax());
+        bar.setProgress(Math.max(0, target.getVolumeStep()));
+        box.addView(bar);
+        bar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar s, int p, boolean fromUser) {
+                pct.setText(Math.round(p * 100f / s.getMax()) + "%");
+                if (fromUser) {
+                    Feedback.tick(s);
+                    target.setVolumeStep(p);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(android.widget.SeekBar s) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(android.widget.SeekBar s) {
+            }
+        });
+        dialog().setTitle("TV volume").setView(box).setPositiveButton("Done", null).show();
+    }
+
+    // ---------------------------------------------------------------- settings
+
+    private void showSettings() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(24), dp(8), dp(24), dp(8));
+        android.widget.Switch vib = new android.widget.Switch(this);
+        vib.setText("Vibrate on button press");
+        vib.setTextColor(0xFFECEFF4);
+        vib.setChecked(Feedback.haptics());
+        vib.setPadding(0, dp(12), 0, dp(12));
+        android.widget.Switch snd = new android.widget.Switch(this);
+        snd.setText("Tick sound on button press");
+        snd.setTextColor(0xFFECEFF4);
+        snd.setChecked(Feedback.sound());
+        snd.setPadding(0, dp(12), 0, dp(12));
+        box.addView(vib);
+        box.addView(snd);
+        vib.setOnCheckedChangeListener((b, on) -> {
+            Feedback.set(prefs, on, snd.isChecked());
+            Feedback.tap(b);
+        });
+        snd.setOnCheckedChangeListener((b, on) -> {
+            Feedback.set(prefs, vib.isChecked(), on);
+            Feedback.tap(b);
+        });
+        dialog().setTitle("Settings").setView(box).setPositiveButton("Done", null).show();
     }
 
     /** One dot per TV, colored by its connection; the selected one is larger. */
@@ -426,7 +546,7 @@ public final class MainActivity extends Activity {
 
     private void bindKey(int id, int keyCode) {
         findViewById(id).setOnClickListener(v -> {
-            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            Feedback.tap(v);
             send(keyCode);
         });
     }
@@ -446,7 +566,7 @@ public final class MainActivity extends Activity {
                 case MotionEvent.ACTION_DOWN:
                     view.drawableHotspotChanged(e.getX(), e.getY());
                     view.setPressed(true);
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    Feedback.tap(view);
                     send(keyCode);
                     handler.postDelayed(repeat, 450);
                     return true;
@@ -464,7 +584,19 @@ public final class MainActivity extends Activity {
     }
 
     private void send(int keyCode) {
-        if (ensureConnected()) tv.pressKey(keyCode);
+        if (ensureConnected()) {
+            tv.pressKey(keyCode);
+            afterVolumeKey(keyCode);
+        }
+    }
+
+    /** Re-reads the TV volume shortly after a volume key so the % stays correct. */
+    private void afterVolumeKey(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+                || keyCode == KeyEvent.KEYCODE_VOLUME_MUTE) {
+            handler.removeCallbacks(volumeRefresh);
+            handler.postDelayed(volumeRefresh, 250);
+        }
     }
 
     /** True when connected; otherwise reconnects / opens the TV list and says so once. */
@@ -490,6 +622,7 @@ public final class MainActivity extends Activity {
         if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
                 && tv != null && tv.isConnected()) {
             tv.pressKey(keyCode);
+            afterVolumeKey(keyCode);
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -688,17 +821,24 @@ public final class MainActivity extends Activity {
         final TvController target = tv;
         List<TvController.TvApp> apps = new ArrayList<>();
         ArrayAdapter<TvController.TvApp> adapter = new ArrayAdapter<TvController.TvApp>(
-                this, android.R.layout.simple_list_item_2, android.R.id.text1, apps) {
+                this, android.R.layout.simple_list_item_1, apps) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
-                View v = super.getView(position, convertView, parent);
                 TvController.TvApp app = getItem(position);
-                boolean fav = isFavorite(app.component);
-                ((TextView) v.findViewById(android.R.id.text1)).setText((fav ? "★  " : "") + app.label);
-                TextView sub = v.findViewById(android.R.id.text2);
-                sub.setText(app.packageName);
-                sub.setTextColor(0xFF8A93A6);
-                return v;
+                LinearLayout row = new LinearLayout(MainActivity.this);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(dp(20), dp(10), dp(20), dp(10));
+                row.addView(appIcon(app, 40), new LinearLayout.LayoutParams(dp(40), dp(40)));
+                LinearLayout texts = new LinearLayout(MainActivity.this);
+                texts.setOrientation(LinearLayout.VERTICAL);
+                texts.setPadding(dp(14), 0, 0, 0);
+                texts.addView(text(app.label, 16, 0xFFECEFF4));
+                texts.addView(text(app.packageName, 11, 0xFF8A93A6));
+                row.addView(texts, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                TextView star = text(isFavorite(app.component) ? "★" : "☆", 22,
+                        isFavorite(app.component) ? 0xFFF5C451 : 0xFF8A93A6);
+                row.addView(star);
+                return row;
             }
         };
         ListView list = new ListView(this);
@@ -706,7 +846,7 @@ public final class MainActivity extends Activity {
         list.setOnItemLongClickListener((p, v, pos, id) -> {
             TvController.TvApp app = apps.get(pos);
             boolean added = toggleFavorite(app);
-            v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            Feedback.longPress(v);
             Toast.makeText(this, app.label + (added ? " added to favorites" : " removed from favorites"),
                     Toast.LENGTH_SHORT).show();
             adapter.notifyDataSetChanged();

@@ -25,8 +25,8 @@ public final class DpadView extends View {
 
     private final Paint ring = paint(0x26FFFFFF);
     private final Paint ringPressed = paint(0x40FFFFFF);
-    private final Paint center = paint(0xCC3D6BFF);
-    private final Paint centerPressed = paint(0xFF7FA2FF);
+    private final Paint center = paint(0x47FFFFFF);
+    private final Paint centerPressed = paint(0x80FFFFFF);
     private final Paint gap = paint(0x33FFFFFF);
     private final Paint chevron = paint(0xCCFFFFFF);
     private final Paint label = paint(0xFFECEFF4);

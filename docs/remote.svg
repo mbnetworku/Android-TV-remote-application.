@@ -4,11 +4,11 @@
     <radialGradient id="b2" cx="0.9" cy="0.45" r="0.7"><stop offset="0" stop-color="#9B4DFF" stop-opacity="0.55"/><stop offset="1" stop-color="#9B4DFF" stop-opacity="0"/></radialGradient>
     <radialGradient id="b3" cx="0.2" cy="0.85" r="0.65"><stop offset="0" stop-color="#00C2B8" stop-opacity="0.55"/><stop offset="1" stop-color="#00C2B8" stop-opacity="0"/></radialGradient>
     <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.18"/><stop offset="1" stop-color="#fff" stop-opacity="0.06"/></linearGradient>
-    <clipPath id="phone"><rect width="360" height="740" rx="40"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23262D"/><stop offset="1" stop-color="#0B0C0F"/></linearGradient><radialGradient id="glow" cx="0.5" cy="0.08" r="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><clipPath id="phone"><rect width="360" height="740" rx="40"/></clipPath>
   </defs>
   <g clip-path="url(#phone)">
     <rect width="360" height="740" fill="#070A14"/>
-    <rect width="360" height="740" fill="url(#b1)"/><rect width="360" height="740" fill="url(#b2)"/><rect width="360" height="740" fill="url(#b3)"/>
+    <rect width="360" height="740" fill="url(#bg)"/><rect width="360" height="740" fill="url(#glow)"/>
     <!-- header -->
     <rect x="16" y="40" width="260" height="56" rx="28" fill="url(#glass)" stroke="#fff" stroke-opacity="0.25"/>
     <circle cx="40" cy="68" r="5" fill="#3DD68C"/>
@@ -31,7 +31,7 @@
     <g fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
       <path d="M172 240 l8 -8 l8 8"/><path d="M172 400 l8 8 l8 -8"/><path d="M100 312 l-8 8 l8 8"/><path d="M260 312 l8 8 l-8 8"/>
     </g>
-    <circle cx="180" cy="320" r="42" fill="#3D6BFF" fill-opacity="0.8" stroke="#fff" stroke-opacity="0.33"/>
+    <circle cx="180" cy="320" r="42" fill="#fff" fill-opacity="0.28" stroke="#fff" stroke-opacity="0.33"/>
     <text x="180" y="327" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">OK</text>
     <!-- rockers -->
     <g fill="url(#glass)" stroke="#fff" stroke-opacity="0.25"><rect x="16" y="462" width="72" height="128" rx="36"/><rect x="272" y="462" width="72" height="128" rx="36"/></g>

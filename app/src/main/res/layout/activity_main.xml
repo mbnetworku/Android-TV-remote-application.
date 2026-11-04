@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.atvremote.app.ui.LiquidBackground
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:padding="16dp">
+    <!-- Header: TV picker + power -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/deviceButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:background="@drawable/btn_pill"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingEnd="14dp">
+
+            <View
+                android:id="@+id/statusDot"
+                android:layout_width="10dp"
+                android:layout_height="10dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/deviceName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="No TV selected"
+                    android:textColor="@color/text"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/deviceStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="Tap to choose your TV"
+                    android:textColor="@color/muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/pageCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:textColor="@color/muted"
+                android:textSize="12sp" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_expand" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnPower"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/btn_power"
+            android:contentDescription="Power"
+            android:src="@drawable/ic_power"
+            android:tint="@color/red" />
+    </LinearLayout>
+
+    <!-- One dot per saved TV; swipe the header left/right to switch -->
+    <LinearLayout
+        android:id="@+id/pageDots"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_banner"
+        android:padding="14dp"
+        android:text="Look at your TV: tick “Always allow from this computer”, then choose Allow."
+        android:textColor="@color/text"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- Navigation row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <ImageButton android:id="@+id/btnBack" style="@style/RemoteBtn" android:contentDescription="Back" android:src="@drawable/ic_back" />
+        <ImageButton android:id="@+id/btnHome" style="@style/RemoteBtn" android:contentDescription="Home" android:src="@drawable/ic_home" />
+        <ImageButton android:id="@+id/btnMenu" style="@style/RemoteBtn" android:contentDescription="Menu" android:src="@drawable/ic_menu" />
+        <ImageButton android:id="@+id/btnSettings" style="@style/RemoteBtn" android:contentDescription="Settings" android:src="@drawable/ic_settings" />
+    </LinearLayout>
+
+    <!-- D-pad / touchpad -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1">
+
+        <com.atvremote.app.ui.DpadView
+            android:id="@+id/dpad"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.atvremote.app.ui.TouchpadView
+            android:id="@+id/touchpad"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <!-- Volume / media / channel -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="128dp"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="72dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_rocker"
+            android:orientation="vertical">
+
+            <TextView android:id="@+id/volUp" style="@style/RockerKey" android:contentDescription="Volume up" android:text="+" />
+            <TextView style="@style/RockerLabel" android:text="VOL" />
+            <TextView android:id="@+id/volDown" style="@style/RockerKey" android:contentDescription="Volume down" android:text="−" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <ImageButton android:id="@+id/btnMute" style="@style/RoundBtn" android:contentDescription="Mute" android:src="@drawable/ic_mute" />
+                <ImageButton android:id="@+id/btnInput" style="@style/RoundBtn" android:contentDescription="Input source" android:src="@drawable/ic_input" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <ImageButton android:id="@+id/btnRewind" style="@style/RoundBtn" android:contentDescription="Rewind" android:src="@drawable/ic_rewind" />
+                <ImageButton android:id="@+id/btnPlay" style="@style/RoundBtn" android:contentDescription="Play or pause" android:src="@drawable/ic_play_pause" />
+                <ImageButton android:id="@+id/btnFf" style="@style/RoundBtn" android:contentDescription="Fast forward" android:src="@drawable/ic_ff" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="72dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_rocker"
+            android:orientation="vertical">
+
+            <TextView android:id="@+id/chUp" style="@style/RockerKey" android:contentDescription="Channel up" android:text="+" />
+            <TextView style="@style/RockerLabel" android:text="CH" />
+            <TextView android:id="@+id/chDown" style="@style/RockerKey" android:contentDescription="Channel down" android:text="−" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Favorite apps for the selected TV -->
+    <HorizontalScrollView
+        android:id="@+id/favScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/favRow"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <!-- Tools -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <ImageButton android:id="@+id/btnKeyboard" style="@style/RemoteBtn" android:contentDescription="Keyboard" android:src="@drawable/ic_keyboard" />
+        <ImageButton android:id="@+id/btnApps" style="@style/RemoteBtn" android:contentDescription="Apps" android:src="@drawable/ic_apps" />
+        <ImageButton android:id="@+id/btnPadMode" style="@style/RemoteBtn" android:contentDescription="Switch to touchpad" android:src="@drawable/ic_touchpad" />
+    </LinearLayout>
+</LinearLayout>
+</FrameLayout>

@@ -1,0 +1,47 @@
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/surface</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <style name="RemoteBtn">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:layout_marginEnd">4dp</item>
+        <item name="android:background">@drawable/btn_pill</item>
+        <item name="android:scaleType">center</item>
+    </style>
+    <style name="RoundBtn">
+        <item name="android:layout_width">50dp</item>
+        <item name="android:layout_height">50dp</item>
+        <item name="android:layout_margin">3dp</item>
+        <item name="android:background">@drawable/btn_round</item>
+        <item name="android:scaleType">center</item>
+    </style>
+    <style name="RockerKey">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/btn_flat</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:clickable">true</item>
+    </style>
+    <style name="RockerLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.15</item>
+    </style>
+</resources>

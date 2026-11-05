@@ -1,4 +1,0 @@
-<resources>
-    <string name="app_name">TV Remote Receiver</string>
-    <string name="service_desc">Lets the TV Remote phone app control this TV over Wi-Fi: move, select, back, home, volume, typing and opening apps. A phone must enter the PIN shown on this TV before it can connect. Nothing is sent to the internet.</string>
-</resources>

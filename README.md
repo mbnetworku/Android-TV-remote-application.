@@ -20,15 +20,10 @@ No IP typing · Many TVs · Instant response · Liquid glass design
   <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20APK-Latest%20version-000000?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=1F1F1F" height="56" alt="Download APK"/>
 </a>
 
-<sub>📱 For your <b>phone</b> · Free · ~90 KB · Android 5.0 and newer · <a href="https://github.com/mbnetworku/Android-TV-remote-application./releases">all versions</a></sub>
+<sub>Free · ~100 KB · Android 5.0 and newer · <a href="https://github.com/mbnetworku/Android-TV-remote-application./releases">all versions</a></sub>
 
-<br/><br/>
 
-<a href="https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote-Receiver.apk">
-  <img src="https://img.shields.io/badge/📺%20TV%20RECEIVER-Optional%20·%20no%20developer%20options-000000?style=for-the-badge&labelColor=1F1F1F" height="40" alt="Download TV Receiver"/>
-</a>
-
-<sub>📺 For your <b>TV</b>, only if it has no Google TV pairing and you don't want to turn on debugging. See Step 2.</sub>
+<sub>📺 <b>One APK for phone and TV.</b> On a phone it is the remote; on a TV it becomes the <b>TV Remote Receiver</b> (no developer options needed).</sub>
 
 <br/><br/>
 
@@ -56,7 +51,7 @@ It works on **every** Android TV, **with or without developer options**, and pic
 | Your TV | How it connects | Developer options? |
 |---|---|---|
 | 🟢 Google-certified Android TV / Google TV (Sony, TCL, Philips, Xiaomi, Chromecast, Shield…) | **Google TV pairing**: type the code shown on the TV | ❌ Not needed |
-| 🟢 Any Android TV or box (Realtek, Amlogic, MBOX…) | **TV Receiver app**: install once, type the PIN shown on the TV | ❌ Not needed |
+| 🟢 Any Android TV or box (Realtek, Amlogic, MBOX…) | **Same APK installed on the TV** (TV Remote Receiver): type the PIN shown on the TV | ❌ Not needed |
 | 🟢 Any Android TV with debugging on | **Network debugging**: fastest, full features | ✅ Needed |
 
 > 💡 **Lost your remote? Batteries dead?** Just open the app.
@@ -153,8 +148,8 @@ Make sure the TV and phone use the **same Wi-Fi**, then pick **one** of these:
 **🅰️ Google TV / certified Android TV: nothing to install**
 Skip to Step 3. The phone shows a box for the 6-character code your TV displays.
 
-**🅱️ Any other TV or box: install the TV Receiver (no developer options)**
-1. Get **[TVRemote-Receiver.apk](https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote-Receiver.apk)** onto the TV, with a USB stick or the free **Downloader** app.
+**🅱️ Any other TV or box: install the same app on the TV (no developer options)**
+1. Install the same **[TVRemote.apk](https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote.apk)** on the TV, with a USB stick or the free **Downloader** app.
 2. Open **TV Remote Receiver** on the TV and press **Open Accessibility settings**.
 3. Switch **TV Remote Receiver** **ON**.
 

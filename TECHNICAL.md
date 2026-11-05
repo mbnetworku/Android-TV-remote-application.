@@ -75,7 +75,7 @@ When the app connects to a TV it tries, in order:
 
 | Order | Method | Port | Needs developer options | Notes |
 |---|---|---|---|---|
-| 1 | **TV Receiver app** (`receiver/` module) | 6470 (TCP, text lines) | No | AccessibilityService on the TV. First connection needs the 4-digit PIN shown on the TV; the phone then keeps a token. D-pad moves the TV's focus; volume through `AudioManager`; media keys through `dispatchMediaKeyEvent`; text through `ACTION_SET_TEXT`. |
+| 1 | **TV Receiver** (`com.atvremote.receiver`, inside the same APK) | 6470 (TCP, text lines) | No | AccessibilityService on the TV. First connection needs the 4-digit PIN shown on the TV; the phone then keeps a token. D-pad moves the TV's focus; volume through `AudioManager`; media keys through `dispatchMediaKeyEvent`; text through `ACTION_SET_TEXT`. |
 | 2 | **Google TV Remote protocol v2** (`atv/`) | 6467 pairing, 6466 remote (TLS) | No | Certified Android TV / Google TV only. Self-signed client certificate made by `AtvCert`; pairing secret = SHA-256 of both RSA keys + code. Apps open with `market://launch?id=…` links. |
 | 3 | **ADB** (`adb/`) | 5555 | Yes | Fastest and most complete (helper injects real key events). |
 

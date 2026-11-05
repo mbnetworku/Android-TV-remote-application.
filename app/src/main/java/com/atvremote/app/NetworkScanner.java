@@ -1,10 +1,6 @@
 package com.atvremote.app;
 
 import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.LinkAddress;
-import android.net.LinkProperties;
-import android.net.Network;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -76,19 +72,22 @@ public final class NetworkScanner {
 
     /** "192.168.1." for the phone's current network, or null if it has no IPv4 address. */
     static String localPrefix(Context ctx) {
-        ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return null;
-        Network n = cm.getActiveNetwork();
-        if (n == null) return null;
-        LinkProperties lp = cm.getLinkProperties(n);
-        if (lp == null) return null;
-        for (LinkAddress la : lp.getLinkAddresses()) {
-            InetAddress a = la.getAddress();
-            if (a instanceof Inet4Address && !a.isLoopbackAddress()) {
-                byte[] b = a.getAddress();
-                return (b[0] & 0xFF) + "." + (b[1] & 0xFF) + "." + (b[2] & 0xFF) + ".";
+        // NetworkInterface works on every Android version; prefer Wi-Fi/Ethernet over mobile data.
+        String fallback = null;
+        try {
+            for (java.net.NetworkInterface ni : java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())) {
+                if (!ni.isUp() || ni.isLoopback()) continue;
+                for (InetAddress a : java.util.Collections.list(ni.getInetAddresses())) {
+                    if (!(a instanceof Inet4Address) || !a.isSiteLocalAddress()) continue;
+                    byte[] b = a.getAddress();
+                    String prefix = (b[0] & 0xFF) + "." + (b[1] & 0xFF) + "." + (b[2] & 0xFF) + ".";
+                    String name = ni.getName();
+                    if (name.startsWith("wlan") || name.startsWith("eth")) return prefix;
+                    if (fallback == null && !name.startsWith("rmnet") && !name.startsWith("ccmni")) fallback = prefix;
+                }
             }
+        } catch (Exception ignored) {
         }
-        return null;
+        return fallback;
     }
 }

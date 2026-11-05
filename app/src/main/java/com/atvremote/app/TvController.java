@@ -18,7 +18,6 @@ import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import com.atvremote.app.adb.IoUtil;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -168,7 +167,7 @@ public final class TvController {
     /** Copies this APK to the TV and starts the Injector from it; falls back to "input" if that fails. */
     private void startInput(AdbConnection c, int gen) throws IOException {
         try {
-            byte[] apk = Files.readAllBytes(new File(ctx.getApplicationInfo().sourceDir).toPath());
+            byte[] apk = IoUtil.read(new File(ctx.getApplicationInfo().sourceDir));
             String want = md5(apk);
             String have = c.shell("md5sum " + REMOTE_APK + " 2>/dev/null", 10000).trim();
             if (!have.startsWith(want)) {
@@ -312,7 +311,11 @@ public final class TvController {
 
     private static final Pattern COMPONENT = Pattern.compile("^\\s*([A-Za-z0-9_.]+)/([A-Za-z0-9_.$]+)\\s*$");
 
-    public void loadApps(Consumer<List<TvApp>> callback) {
+    public interface AppsCallback {
+        void onApps(List<TvApp> apps);
+    }
+
+    public void loadApps(AppsCallback callback) {
         final AdbConnection c = conn;
         bg.execute(() -> {
             List<TvApp> apps = new ArrayList<>();
@@ -339,24 +342,39 @@ public final class TvController {
                     Log.w(TAG, "app list failed", e);
                 }
             }
-            main.post(() -> callback.accept(apps));
+            main.post(() -> callback.onApps(apps));
         });
     }
 
     /** Asks the helper on the TV for real app names and icons; caches them on the phone. */
     private void fetchNamesAndIcons(AdbConnection c, List<TvApp> apps) {
-        if (fallbackInput || apps.isEmpty()) return;
+        if (fallbackInput) return;
+        // With no package list (Android 5/6 have no "cmd package"), the helper finds the apps itself.
         StringBuilder cmd = new StringBuilder("CLASSPATH=" + REMOTE_APK + " app_process / " + INJECTOR_CLASS + " apps");
         for (TvApp a : apps) cmd.append(' ').append(a.packageName);
         String out;
         try {
-            out = c.shell(cmd.toString(), 30000);
+            out = c.shell(cmd.toString(), 45000);
         } catch (IOException e) {
             Log.w(TAG, "icon fetch failed", e);
             return;
         }
         Map<String, TvApp> byPkg = new HashMap<>();
         for (TvApp a : apps) byPkg.put(a.packageName, a);
+        for (String line : out.split("\n")) {
+            if (!line.startsWith("ACT ")) continue;
+            String component = line.substring(4).trim();
+            int slash = component.indexOf('/');
+            if (slash <= 0) continue;
+            String pkg = component.substring(0, slash);
+            if (byPkg.containsKey(pkg)) continue;
+            TvApp app = new TvApp(component, pkg, prettyName(pkg));
+            String cached = cachedLabel(ctx, pkg);
+            if (cached != null) app.label = cached;
+            app.icon = cachedIcon(ctx, pkg);
+            apps.add(app);
+            byPkg.put(pkg, app);
+        }
         for (String line : out.split("\n")) {
             if (!line.startsWith("APP ")) continue;
             String[] p = line.substring(4).trim().split("\t");
@@ -370,8 +388,8 @@ public final class TvController {
                 if (!p[1].isEmpty()) a.label = p[1];
                 File dir = new File(ctx.getFilesDir(), "icons");
                 dir.mkdirs();
-                Files.write(new File(dir, a.packageName + ".png").toPath(), png);
-                Files.write(new File(dir, a.packageName + ".txt").toPath(), a.label.getBytes(StandardCharsets.UTF_8));
+                IoUtil.write(new File(dir, a.packageName + ".png"), png);
+                IoUtil.write(new File(dir, a.packageName + ".txt"), a.label.getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
                 Log.w(TAG, "bad icon for " + p[0], e);
             }
@@ -386,7 +404,7 @@ public final class TvController {
     static String cachedLabel(Context ctx, String pkg) {
         try {
             File f = new File(new File(ctx.getFilesDir(), "icons"), pkg + ".txt");
-            return f.isFile() ? new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8).trim() : null;
+            return f.isFile() ? new String(IoUtil.read(f), StandardCharsets.UTF_8).trim() : null;
         } catch (IOException e) {
             return null;
         }

@@ -8,7 +8,7 @@
 
 No IP typing · Many TVs · Instant response · Liquid glass design
 
-![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+![Android](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)
 ![Size](https://img.shields.io/badge/size-~60%20KB-5B8CFF)
 ![Ads](https://img.shields.io/badge/ads-none-00C2B8)
 ![Tracking](https://img.shields.io/badge/tracking-none-00C2B8)
@@ -108,7 +108,7 @@ flowchart LR
 2. Tap **`TVRemote.apk`** to download it.
 3. Open the file. If Android asks, allow **"Install unknown apps"**.
 
-Needs **Android 8.0** or newer.
+Needs **Android 5.0** or newer.
 </details>
 
 <details>

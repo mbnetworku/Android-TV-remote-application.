@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Language | Java 17, plain Android SDK (no third-party libraries) |
-| Min / target SDK | 26 (Android 8.0) / 34 |
+| Min / target SDK | 21 (Android 5.0) / 34 |
 | APK size | ~60 KB |
 | Transport | ADB protocol over TCP (port 5555), implemented from scratch |
 | Input latency | ~16 ms per key after setup (vs ~1.4 s for `adb shell input keyevent`) |
@@ -67,3 +67,4 @@ Output: `app/build/outputs/apk/release/app-release.apk`. Minification is off on 
 ## Tested
 
 - Realtek "SMART_TV", Android 9: connect 50 ms, 300 KB push 130 ms, helper start ~2 s, key round-trip ~16 ms.
+- "MBOX" (Amlogic), Android 5.1.1: helper, volume read, real app names + icons for all 25 apps.

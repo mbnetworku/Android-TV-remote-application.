@@ -7,7 +7,6 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -17,7 +16,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
-import java.util.Base64;
 
 import javax.crypto.Cipher;
 
@@ -46,9 +44,9 @@ public final class AdbCrypto {
         KeyFactory kf = KeyFactory.getInstance("RSA");
         if (privFile.isFile() && pubFile.isFile()) {
             try {
-                PrivateKey priv = kf.generatePrivate(new PKCS8EncodedKeySpec(Files.readAllBytes(privFile.toPath())));
+                PrivateKey priv = kf.generatePrivate(new PKCS8EncodedKeySpec(IoUtil.read(privFile)));
                 RSAPublicKey pub = (RSAPublicKey) kf.generatePublic(
-                        new X509EncodedKeySpec(Files.readAllBytes(pubFile.toPath())));
+                        new X509EncodedKeySpec(IoUtil.read(pubFile)));
                 return new AdbCrypto(priv, pub, name);
             } catch (GeneralSecurityException | IOException | ClassCastException e) {
                 // Corrupt key files: fall through and make a new key (the TV will ask to approve again).
@@ -87,7 +85,7 @@ public final class AdbCrypto {
 
     /** Payload for AUTH(RSAPUBLICKEY): base64 of Android's RSAPublicKey struct, a name, and a NUL. */
     public byte[] publicKeyPayload() {
-        String s = Base64.getEncoder().encodeToString(encodeAndroidPublicKey(publicKey)) + " " + name + "\0";
+        String s = IoUtil.base64(encodeAndroidPublicKey(publicKey)) + " " + name + "\0";
         return s.getBytes(StandardCharsets.US_ASCII);
     }
 

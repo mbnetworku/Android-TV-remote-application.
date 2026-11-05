@@ -188,6 +188,29 @@ public final class Injector {
         } catch (Throwable t) {
             System.out.println("ERR " + t);
         }
+        if (pkgs.length == 1 && pm != null) {
+            // No packages given: list launchable apps ourselves ("cmd package" is missing before Android 7).
+            java.util.LinkedHashMap<String, String> found = new java.util.LinkedHashMap<>();
+            for (String category : new String[]{"android.intent.category.LEANBACK_LAUNCHER",
+                    "android.intent.category.LAUNCHER"}) {
+                android.content.Intent it = new android.content.Intent(android.content.Intent.ACTION_MAIN);
+                it.addCategory(category);
+                try {
+                    for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(it, 0)) {
+                        String p = ri.activityInfo.packageName;
+                        if (!found.containsKey(p)) found.put(p, p + "/" + ri.activityInfo.name);
+                    }
+                } catch (Throwable t) {
+                    System.out.println("ERR " + t);
+                }
+            }
+            for (String component : found.values()) System.out.println("ACT " + component);
+            String[] all = new String[found.size() + 1];
+            all[0] = "apps";
+            int k = 1;
+            for (String p : found.keySet()) all[k++] = p;
+            pkgs = all;
+        }
         for (int i = 1; i < pkgs.length && pm != null; i++) {
             try {
                 android.content.pm.ApplicationInfo ai = pm.getApplicationInfo(pkgs[i], 0);

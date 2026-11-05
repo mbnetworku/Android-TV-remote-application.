@@ -9,12 +9,22 @@
 No IP typing · Many TVs · Instant response · Liquid glass design
 
 ![Android](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)
-![Size](https://img.shields.io/badge/size-~60%20KB-5B8CFF)
+![Size](https://img.shields.io/badge/size-~75%20KB-5B8CFF)
 ![Ads](https://img.shields.io/badge/ads-none-00C2B8)
 ![Tracking](https://img.shields.io/badge/tracking-none-00C2B8)
 ![License](https://img.shields.io/badge/license-proprietary-E5484D)
 
-**[⬇️ Download the APK](../../releases/latest)** · [How it works](TECHNICAL.md) · [Security](SECURITY.md)
+<br/>
+
+<a href="https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote.apk">
+  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20APK-Latest%20version-000000?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=1F1F1F" height="56" alt="Download APK"/>
+</a>
+
+<sub>Free · ~75 KB · Android 5.0 and newer · <a href="https://github.com/mbnetworku/Android-TV-remote-application./releases">all versions</a></sub>
+
+<br/><br/>
+
+[How it works](TECHNICAL.md) · [Security](SECURITY.md)
 
 </div>
 
@@ -104,9 +114,8 @@ flowchart LR
 <summary><b>📥 Step 1: Install the app</b> (click to open)</summary>
 <br/>
 
-1. Open **[Releases](../../releases/latest)** on your phone.
-2. Tap **`TVRemote.apk`** to download it.
-3. Open the file. If Android asks, allow **"Install unknown apps"**.
+1. On your phone, tap **[⬇️ Download APK](https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote.apk)**. The download starts straight away.
+2. Open the downloaded file. If Android asks, allow **"Install unknown apps"**.
 
 Needs **Android 5.0** or newer.
 </details>

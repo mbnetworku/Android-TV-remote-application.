@@ -120,10 +120,10 @@
         android:layout_marginTop="16dp"
         android:orientation="horizontal">
 
-        <ImageButton android:id="@+id/btnBack" style="@style/RemoteBtn" android:contentDescription="Back" android:src="@drawable/ic_back" />
-        <ImageButton android:id="@+id/btnHome" style="@style/RemoteBtn" android:contentDescription="Home" android:src="@drawable/ic_home" />
-        <ImageButton android:id="@+id/btnMenu" style="@style/RemoteBtn" android:contentDescription="Menu" android:src="@drawable/ic_menu" />
-        <ImageButton android:id="@+id/btnSettings" style="@style/RemoteBtn" android:contentDescription="Settings" android:src="@drawable/ic_settings" />
+        <TextView android:id="@+id/btnBack" style="@style/TileBtn" android:drawableTop="@drawable/ic_back" android:text="Back" />
+        <TextView android:id="@+id/btnHome" style="@style/TileBtn" android:drawableTop="@drawable/ic_home" android:text="Home" />
+        <TextView android:id="@+id/btnMenu" style="@style/TileBtn" android:drawableTop="@drawable/ic_menu" android:text="Menu" />
+        <TextView android:id="@+id/btnSettings" style="@style/TileBtn" android:drawableTop="@drawable/ic_settings" android:text="TV Settings" />
     </LinearLayout>
 
     <!-- D-pad / touchpad -->
@@ -225,10 +225,10 @@
         android:layout_marginTop="12dp"
         android:orientation="horizontal">
 
-        <ImageButton android:id="@+id/btnKeyboard" style="@style/RemoteBtn" android:contentDescription="Keyboard" android:src="@drawable/ic_keyboard" />
-        <ImageButton android:id="@+id/btnApps" style="@style/RemoteBtn" android:contentDescription="Apps" android:src="@drawable/ic_apps" />
-        <ImageButton android:id="@+id/btnPadMode" style="@style/RemoteBtn" android:contentDescription="Switch to touchpad" android:src="@drawable/ic_touchpad" />
-        <ImageButton android:id="@+id/btnPrefs" style="@style/RemoteBtn" android:contentDescription="App settings" android:src="@drawable/ic_tune" />
+        <TextView android:id="@+id/btnKeyboard" style="@style/TileBtn" android:drawableTop="@drawable/ic_keyboard" android:text="Keyboard" />
+        <TextView android:id="@+id/btnApps" style="@style/TileBtn" android:drawableTop="@drawable/ic_apps" android:text="Apps" />
+        <TextView android:id="@+id/btnPadMode" style="@style/TileBtn" android:drawableTop="@drawable/ic_touchpad" android:text="Touchpad" />
+        <TextView android:id="@+id/btnPrefs" style="@style/TileBtn" android:drawableTop="@drawable/ic_tune" android:text="Options" />
     </LinearLayout>
 </LinearLayout>
 </FrameLayout>

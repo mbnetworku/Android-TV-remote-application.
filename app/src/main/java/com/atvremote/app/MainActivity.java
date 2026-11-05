@@ -58,7 +58,7 @@ public final class MainActivity extends Activity {
     private LinearLayout pageDots;
     private DpadView dpad;
     private TouchpadView touchpad;
-    private ImageButton padMode;
+    private TextView padMode;
     private long lastHint;
     private Runnable pickerRefresh; // refreshes the open TV picker, if any
 
@@ -640,7 +640,8 @@ public final class MainActivity extends Activity {
     private void setTouchpad(boolean on) {
         touchpad.setVisibility(on ? View.VISIBLE : View.GONE);
         dpad.setVisibility(on ? View.GONE : View.VISIBLE);
-        padMode.setImageResource(on ? R.drawable.ic_dpad : R.drawable.ic_touchpad);
+        padMode.setCompoundDrawablesWithIntrinsicBounds(0, on ? R.drawable.ic_dpad : R.drawable.ic_touchpad, 0, 0);
+        padMode.setText(on ? "D-pad" : "Touchpad");
         padMode.setContentDescription(on ? "Switch to D-pad" : "Switch to touchpad");
         prefs.edit().putBoolean("touchpad", on).apply();
     }

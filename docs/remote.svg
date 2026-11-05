@@ -8,7 +8,7 @@
   </defs>
   <g clip-path="url(#phone)">
     <rect width="360" height="740" fill="#070A14"/>
-    <rect width="360" height="740" fill="url(#bg)"/><rect width="360" height="740" fill="url(#glow)"/>
+    <rect width="360" height="740" fill="#000"/>
     <!-- header -->
     <rect x="16" y="40" width="260" height="56" rx="28" fill="url(#glass)" stroke="#fff" stroke-opacity="0.25"/>
     <circle cx="40" cy="68" r="5" fill="#3DD68C"/>

@@ -42,7 +42,7 @@ public final class TvController {
     private static final String REMOTE_APK = "/data/local/tmp/atvremote-helper.apk";
     private static final String INJECTOR_CLASS = "com.atvremote.app.inject.Injector";
 
-    public enum State { DISCONNECTED, CONNECTING, AWAITING_APPROVAL, CONNECTED }
+    public enum State { DISCONNECTED, CONNECTING, AWAITING_APPROVAL, AWAITING_CODE, CONNECTED }
 
     public interface Listener {
         void onStateChanged(State state, String title, String detail);
@@ -99,6 +99,49 @@ public final class TvController {
 
     // ---------------------------------------------------------------- connection
 
+    /** How this TV is controlled. Picked automatically: receiver app, then Google TV, then ADB. */
+    public enum Mode { ADB, RECEIVER, GOOGLE }
+
+    private volatile Mode mode = Mode.ADB;
+    private volatile java.net.Socket rxSocket;
+    private volatile java.io.OutputStream rxOut;
+    private volatile com.atvremote.app.atv.AtvRemote atv;
+    private final java.util.concurrent.LinkedBlockingQueue<String> codeAnswers = new java.util.concurrent.LinkedBlockingQueue<>();
+    private volatile String codeKind = "CODE";
+
+    public Mode getMode() {
+        return mode;
+    }
+
+    /** "PIN" (receiver app, 4 digits) or "CODE" (Google TV, 6 characters). */
+    public String getCodeKind() {
+        return codeKind;
+    }
+
+    /** Answer for AWAITING_CODE; null cancels. */
+    public void submitCode(String code) {
+        codeAnswers.offer(code == null ? "\u0000" : code);
+    }
+
+    private String waitForCode(int gen, String kind, String message) throws InterruptedException {
+        codeKind = kind;
+        codeAnswers.clear();
+        setState(gen, State.AWAITING_CODE, host, message);
+        String c = codeAnswers.poll(5, java.util.concurrent.TimeUnit.MINUTES);
+        if (c == null || c.equals("\u0000") || gen != generation) return null;
+        setState(gen, State.CONNECTING, host, "Checking…");
+        return c;
+    }
+
+    private static boolean portOpen(String host, int port) {
+        try (java.net.Socket s = new java.net.Socket()) {
+            s.connect(new java.net.InetSocketAddress(host, port), 1500);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     public void connect(String host, int port) {
         disconnect();
         final int gen = generation;
@@ -107,6 +150,18 @@ public final class TvController {
         setState(gen, State.CONNECTING, host, "Connecting…");
         io.execute(() -> {
             if (gen != generation) return;
+            // No debugging needed for the first two.
+            if (port == DEFAULT_PORT) {
+                if (portOpen(host, RECEIVER_PORT)) {
+                    connectReceiver(gen);
+                    return;
+                }
+                if (portOpen(host, com.atvremote.app.atv.AtvRemote.REMOTE_PORT)) {
+                    connectGoogle(gen);
+                    return;
+                }
+            }
+            mode = Mode.ADB;
             AdbConnection c = null;
             try {
                 AdbCrypto crypto = AdbCrypto.loadOrCreate(ctx.getFilesDir(), "TVRemote@" + Build.MODEL.replace(' ', '_'));
@@ -136,12 +191,171 @@ public final class TvController {
         });
     }
 
+    // ---------------------------------------------------------------- B: receiver app on the TV
+
+    public static final int RECEIVER_PORT = 6470;
+
+    private String rxToken() {
+        return ctx.getSharedPreferences("remote", Context.MODE_PRIVATE).getString("rx_token_" + host, "-");
+    }
+
+    /** Opens a receiver connection and logs in (asking for the TV's PIN if needed). */
+    private java.net.Socket openReceiver(int gen, java.io.BufferedReader[] readerOut) throws Exception {
+        java.net.Socket s = new java.net.Socket();
+        s.connect(new java.net.InetSocketAddress(host, RECEIVER_PORT), 4000);
+        s.setTcpNoDelay(true);
+        java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
+        java.io.OutputStream out = s.getOutputStream();
+        out.write(("HELLO " + rxToken() + " " + Build.MODEL + "\n").getBytes(StandardCharsets.UTF_8));
+        out.flush();
+        String msg = "Enter the 4-digit PIN shown on your TV";
+        while (true) {
+            String line = in.readLine();
+            if (line == null) throw new IOException("The TV closed the connection");
+            if (line.startsWith("OK ")) {
+                ctx.getSharedPreferences("remote", Context.MODE_PRIVATE).edit()
+                        .putString("rx_token_" + host, line.substring(3).trim()).apply();
+                readerOut[0] = in;
+                return s;
+            }
+            if (line.equals("DENIED")) throw new IOException("Wrong PIN · tap to try again");
+            if (line.equals("PIN")) {
+                if (gen < 0) throw new IOException("not paired");
+                String pin = waitForCode(gen, "PIN", msg);
+                if (pin == null) throw new IOException("Pairing cancelled");
+                msg = "Wrong PIN. Check the TV and try again";
+                out.write(("PIN " + pin.trim() + "\n").getBytes(StandardCharsets.UTF_8));
+                out.flush();
+            }
+        }
+    }
+
+    private void connectReceiver(int gen) {
+        try {
+            java.io.BufferedReader[] r = new java.io.BufferedReader[1];
+            java.net.Socket s = openReceiver(gen, r);
+            if (gen != generation) {
+                s.close();
+                return;
+            }
+            java.io.OutputStream out = s.getOutputStream();
+            out.write("name\n".getBytes(StandardCharsets.UTF_8));
+            out.flush();
+            String line;
+            while ((line = r[0].readLine()) != null && !line.startsWith("NAME ")) {
+                handleLine(line);
+            }
+            model = line == null ? null : line.substring(5).trim();
+            mode = Mode.RECEIVER;
+            fallbackInput = false;
+            rxSocket = s;
+            rxOut = out;
+            final java.io.BufferedReader in = r[0];
+            bg.execute(() -> {
+                try {
+                    String l;
+                    while ((l = in.readLine()) != null) handleLine(l);
+                } catch (IOException ignored) {
+                }
+                onConnectionLost(gen);
+            });
+            setState(gen, State.CONNECTED, model != null ? model : host, "Connected · no debugging needed");
+            requestVolume();
+        } catch (Exception e) {
+            Log.w(TAG, "receiver connect failed", e);
+            if (gen == generation) setState(gen, State.DISCONNECTED, host, describe(e));
+        }
+    }
+
+    // ---------------------------------------------------------------- A: Google TV remote protocol
+
+    private void connectGoogle(int gen) {
+        try {
+            com.atvremote.app.atv.AtvCert cert = com.atvremote.app.atv.AtvCert.loadOrCreate(ctx.getFilesDir(), "TVRemote");
+            com.atvremote.app.atv.AtvRemote.Listener l = new com.atvremote.app.atv.AtvRemote.Listener() {
+                @Override
+                public void onVolume(int level, int max, boolean muted) {
+                    volume = level;
+                    volumeMax = max;
+                    notifyListener(state, lastTitle, lastDetail);
+                }
+
+                @Override
+                public void onClosed() {
+                    onConnectionLost(gen);
+                }
+            };
+            String version = "1";
+            try {
+                version = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
+            } catch (Exception ignored) {
+            }
+            com.atvremote.app.atv.AtvRemote r;
+            try {
+                r = com.atvremote.app.atv.AtvRemote.connect(host, cert, Build.MODEL, version, l);
+            } catch (com.atvremote.app.atv.AtvRemote.PairingFailed notPaired) {
+                com.atvremote.app.atv.AtvRemote.pair(host, cert, "TV Remote (" + Build.MODEL + ")",
+                        message -> waitForCode(gen, "CODE", message));
+                setState(gen, State.CONNECTING, host, "Paired · connecting…");
+                r = com.atvremote.app.atv.AtvRemote.connect(host, cert, Build.MODEL, version, l);
+            }
+            if (gen != generation) {
+                r.close();
+                return;
+            }
+            atv = r;
+            mode = Mode.GOOGLE;
+            fallbackInput = false;
+            model = "Android TV";
+            setState(gen, State.CONNECTED, model, "Connected · Google TV pairing");
+        } catch (Exception e) {
+            Log.w(TAG, "google tv connect failed", e);
+            if (gen == generation) setState(gen, State.DISCONNECTED, host, describe(e));
+        }
+    }
+
+    /** Google TV mode has no text field access: type with key presses (letters, digits, basic symbols). */
+    private static int charToKey(char c) {
+        c = Character.toLowerCase(c);
+        if (c >= 'a' && c <= 'z') return KeyEventCodes.A + (c - 'a');
+        if (c >= '0' && c <= '9') return KeyEventCodes.ZERO + (c - '0');
+        switch (c) {
+            case ' ': return 62;
+            case '.': return 56;
+            case ',': return 55;
+            case '@': return 77;
+            case '-': return 69;
+            case '/': return 76;
+            case '+': return 81;
+            case '=': return 70;
+            default: return -1;
+        }
+    }
+
+    private static final class KeyEventCodes {
+        static final int A = 29;
+        static final int ZERO = 7;
+    }
+
     public void disconnect() {
         generation++;
+        codeAnswers.offer("\u0000"); // release a pending code prompt
         final AdbConnection c = conn;
         conn = null;
         input = null;
         if (c != null) bg.execute(c::close);
+        final java.net.Socket rs = rxSocket;
+        rxSocket = null;
+        rxOut = null;
+        if (rs != null) bg.execute(() -> {
+            try {
+                rs.close();
+            } catch (IOException ignored) {
+            }
+        });
+        final com.atvremote.app.atv.AtvRemote a = atv;
+        atv = null;
+        if (a != null) bg.execute(a::close);
         if (state != State.DISCONNECTED) {
             state = State.DISCONNECTED;
             notifyListener(State.DISCONNECTED, host != null ? host : "", "Disconnected");
@@ -152,6 +366,9 @@ public final class TvController {
         if (gen != generation) return;
         conn = null;
         input = null;
+        rxOut = null;
+        rxSocket = null;
+        atv = null;
         setState(gen, State.DISCONNECTED, model != null ? model : host, "Connection lost · press any key");
     }
 
@@ -225,23 +442,29 @@ public final class TvController {
                     while ((nl = buf.indexOf("\n")) >= 0) {
                         String line = buf.substring(0, nl).trim();
                         buf.delete(0, nl + 1);
-                        if (line.startsWith("VOL ")) {
-                            String[] p = line.split(" ");
-                            try {
-                                volume = Integer.parseInt(p[1]);
-                                volumeMax = Integer.parseInt(p[2]);
-                                notifyListener(state, lastTitle, lastDetail);
-                            } catch (RuntimeException ignored) {
-                            }
-                        } else if (line.startsWith("ERR")) {
-                            Log.w(TAG, "TV: " + line);
-                        }
+                        handleLine(line);
                     }
                     if (buf.length() > 8192) buf.setLength(0);
                 }
             } catch (IOException ignored) {
             }
         });
+    }
+
+    /** Output from the ADB helper or the receiver app. */
+    private void handleLine(String line) {
+        line = line.trim();
+        if (line.startsWith("VOL ")) {
+            String[] p = line.split(" ");
+            try {
+                volume = Integer.parseInt(p[1]);
+                volumeMax = Integer.parseInt(p[2]);
+                notifyListener(state, lastTitle, lastDetail);
+            } catch (RuntimeException ignored) {
+            }
+        } else if (line.startsWith("ERR")) {
+            Log.w(TAG, "TV: " + line);
+        }
     }
 
     // ---------------------------------------------------------------- volume
@@ -263,49 +486,105 @@ public final class TvController {
     }
 
     public boolean supportsVolume() {
-        return !fallbackInput;
+        return mode == Mode.GOOGLE ? volumeMax > 0 : !fallbackInput;
     }
 
     public void requestVolume() {
-        if (!fallbackInput) sendLine("v");
+        if (mode != Mode.GOOGLE && !fallbackInput) sendLine("v"); // Google TVs report volume by themselves
     }
 
     public void setVolumeStep(int step) {
-        if (!fallbackInput) sendLine("s " + step);
+        if (mode == Mode.GOOGLE) {
+            int diff = step - volume;
+            int code = diff > 0 ? 24 : 25;
+            for (int i = 0; i < Math.abs(diff); i++) pressKey(code);
+        } else if (!fallbackInput) {
+            sendLine("s " + step);
+        }
     }
 
     // ---------------------------------------------------------------- input
 
     public boolean pressKey(int keyCode) {
+        if (mode == Mode.GOOGLE) return atvSend(r -> r.key(keyCode));
         return sendLine(fallbackInput ? "input keyevent " + keyCode : "k " + keyCode);
     }
 
     public boolean longPressKey(int keyCode) {
+        if (mode == Mode.GOOGLE) return atvSend(r -> r.longKey(keyCode));
         return sendLine(fallbackInput ? "input keyevent --longpress " + keyCode : "l " + keyCode);
     }
 
     public boolean sendText(String text) {
         String clean = text.replace("\n", "").replace("\r", "");
         if (clean.isEmpty()) return true;
+        if (mode == Mode.GOOGLE) {
+            for (char ch : clean.toCharArray()) {
+                int k = charToKey(ch);
+                if (k > 0) pressKey(k);
+            }
+            return true;
+        }
         if (!fallbackInput) return sendLine("t " + clean);
         String escaped = clean.replace("'", "'\\''").replace(" ", "%s");
         return sendLine("input text '" + escaped + "'");
+    }
+
+    private interface AtvAction {
+        void run(com.atvremote.app.atv.AtvRemote r) throws Exception;
+    }
+
+    private boolean atvSend(AtvAction a) {
+        if (state != State.CONNECTED) return false;
+        io.execute(() -> {
+            com.atvremote.app.atv.AtvRemote r = atv;
+            if (r == null) return;
+            try {
+                a.run(r);
+            } catch (Exception e) {
+                Log.w(TAG, "send failed", e);
+            }
+        });
+        return true;
     }
 
     private boolean sendLine(String line) {
         if (state != State.CONNECTED) return false;
         final byte[] data = (line + "\n").getBytes(StandardCharsets.UTF_8);
         io.execute(() -> {
-            AdbStream s = input;
-            if (s == null) return;
             try {
-                s.write(data);
+                if (mode == Mode.RECEIVER) {
+                    java.io.OutputStream o = rxOut;
+                    if (o != null) {
+                        o.write(data);
+                        o.flush();
+                    }
+                    return;
+                }
+                AdbStream s = input;
+                if (s != null) s.write(data);
             } catch (IOException e) {
                 Log.w(TAG, "send failed", e);
             }
         });
         return true;
     }
+
+    /** Popular apps for Google TV mode, which cannot list what is installed. */
+    private static final String[][] GOOGLE_APPS = {
+            {"com.google.android.youtube.tv", "YouTube"},
+            {"com.netflix.ninja", "Netflix"},
+            {"com.amazon.amazonvideo.livingroom", "Prime Video"},
+            {"com.disney.disneyplus", "Disney+"},
+            {"com.spotify.tv.android", "Spotify"},
+            {"com.google.android.youtube.tvmusic", "YouTube Music"},
+            {"com.plexapp.android", "Plex"},
+            {"org.xbmc.kodi", "Kodi"},
+            {"tv.twitch.android.app", "Twitch"},
+            {"com.apple.atve.androidtv.appletv", "Apple TV"},
+            {"com.wbd.stream", "Max"},
+            {"com.android.vending", "Play Store"},
+    };
 
     // ---------------------------------------------------------------- apps
 
@@ -317,9 +596,32 @@ public final class TvController {
 
     public void loadApps(AppsCallback callback) {
         final AdbConnection c = conn;
+        final Mode how = mode;
         bg.execute(() -> {
             List<TvApp> apps = new ArrayList<>();
-            if (c != null) {
+            if (how == Mode.GOOGLE) {
+                for (String[] a : GOOGLE_APPS) {
+                    TvApp app = new TvApp(a[0] + "/", a[0], a[1]);
+                    app.icon = cachedIcon(ctx, a[0]);
+                    apps.add(app);
+                }
+            } else if (how == Mode.RECEIVER) {
+                try {
+                    java.io.BufferedReader[] r = new java.io.BufferedReader[1];
+                    try (java.net.Socket s = openReceiver(-1, r)) {
+                        s.setSoTimeout(45000);
+                        s.getOutputStream().write("apps\n".getBytes(StandardCharsets.UTF_8));
+                        s.getOutputStream().flush();
+                        StringBuilder out = new StringBuilder();
+                        String line;
+                        while ((line = r[0].readLine()) != null && !line.equals("DONE")) out.append(line).append('\n');
+                        parseAppsOutput(out.toString(), apps);
+                    }
+                    Collections.sort(apps, (a, b) -> a.label.compareToIgnoreCase(b.label));
+                } catch (Exception e) {
+                    Log.w(TAG, "receiver app list failed", e);
+                }
+            } else if (c != null) {
                 try {
                     String out = c.shell("cmd package query-activities -a android.intent.action.MAIN"
                             + " -c android.intent.category.LEANBACK_LAUNCHER", 20000);
@@ -359,6 +661,11 @@ public final class TvController {
             Log.w(TAG, "icon fetch failed", e);
             return;
         }
+        parseAppsOutput(out, apps);
+    }
+
+    /** Parses "ACT pkg/cls" and "APP pkg\tlabel\tbase64-png" lines into apps, caching icons. */
+    private void parseAppsOutput(String out, List<TvApp> apps) {
         Map<String, TvApp> byPkg = new HashMap<>();
         for (TvApp a : apps) byPkg.put(a.packageName, a);
         for (String line : out.split("\n")) {
@@ -411,6 +718,14 @@ public final class TvController {
     }
 
     public void launchApp(TvApp app) {
+        if (mode == Mode.GOOGLE) {
+            atvSend(r -> r.openLink("market://launch?id=" + app.packageName));
+            return;
+        }
+        if (mode == Mode.RECEIVER) {
+            sendLine("launch " + app.component);
+            return;
+        }
         final AdbConnection c = conn;
         if (c == null) return;
         bg.execute(() -> {

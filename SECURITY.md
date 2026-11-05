@@ -33,3 +33,8 @@ Only the latest release on the [Releases](../../releases) page receives security
 ## Reporting a vulnerability
 
 Please **do not** open a public issue for security problems. Use GitHub's **"Report a vulnerability"** (Security tab → Advisories) for this repository. You'll get a reply within 7 days.
+
+## Connecting without developer options
+
+- **Google TV pairing:** the phone and TV pair with a code shown on the TV and use encrypted TLS. You can remove the phone on the TV under *Settings → Remotes & Accessories* (name differs by TV).
+- **TV Receiver app:** only phones that typed the **4-digit PIN** shown on the TV can control it. The PIN window appears on the TV every time a new phone tries to connect. To remove all phones, clear the receiver's storage, or uninstall it. The receiver uses Android Accessibility only to move focus, press buttons, type text and open apps. It does not read or send your screen content anywhere.

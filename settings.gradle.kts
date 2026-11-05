@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "TVRemote"
-include(":app")
+include(":app", ":receiver")

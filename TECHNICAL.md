@@ -68,3 +68,15 @@ Output: `app/build/outputs/apk/release/app-release.apk`. Minification is off on 
 
 - Realtek "SMART_TV", Android 9: connect 50 ms, 300 KB push 130 ms, helper start ~2 s, key round-trip ~16 ms.
 - "MBOX" (Amlogic), Android 5.1.1: helper, volume read, real app names + icons for all 25 apps.
+
+## Connection methods (picked automatically)
+
+When the app connects to a TV it tries, in order:
+
+| Order | Method | Port | Needs developer options | Notes |
+|---|---|---|---|---|
+| 1 | **TV Receiver app** (`receiver/` module) | 6470 (TCP, text lines) | No | AccessibilityService on the TV. First connection needs the 4-digit PIN shown on the TV; the phone then keeps a token. D-pad moves the TV's focus; volume through `AudioManager`; media keys through `dispatchMediaKeyEvent`; text through `ACTION_SET_TEXT`. |
+| 2 | **Google TV Remote protocol v2** (`atv/`) | 6467 pairing, 6466 remote (TLS) | No | Certified Android TV / Google TV only. Self-signed client certificate made by `AtvCert`; pairing secret = SHA-256 of both RSA keys + code. Apps open with `market://launch?id=…` links. |
+| 3 | **ADB** (`adb/`) | 5555 | Yes | Fastest and most complete (helper injects real key events). |
+
+The receiver speaks the same line commands as the ADB helper (`k`, `l`, `t`, `v`, `s`), plus `apps`, `launch` and `name`.

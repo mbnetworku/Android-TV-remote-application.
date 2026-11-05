@@ -128,6 +128,7 @@ public final class MainActivity extends Activity {
 
         if (store.current() != null) tv = controllerFor(store.current());
         render();
+        if (!prefs.getBoolean("terms_ok", false)) showTerms(true);
     }
 
     @Override
@@ -158,6 +159,10 @@ public final class MainActivity extends Activity {
         TvController created = new TvController(this);
         created.setListener((state, title, detail) -> {
             if (state == TvController.State.CONNECTED) store.setName(d.host, title);
+            if (state == TvController.State.AWAITING_CODE) showCodeDialog(created, d, detail);
+            else if (codeDialogFor == created && codeDialog != null) {
+                codeDialog.dismiss();
+            }
             if (created == tv) render();
             else renderDots();
             if (pickerRefresh != null) pickerRefresh.run();
@@ -289,7 +294,8 @@ public final class MainActivity extends Activity {
         switch (s) {
             case CONNECTED: return 0xFF3DD68C;
             case CONNECTING:
-            case AWAITING_APPROVAL: return 0xFFF5A524;
+            case AWAITING_APPROVAL:
+            case AWAITING_CODE: return 0xFFF5A524;
             default: return 0xFF5C6370;
         }
     }
@@ -515,7 +521,102 @@ public final class MainActivity extends Activity {
             Feedback.set(prefs, vib.isChecked(), on);
             Feedback.tap(b);
         });
+        TextView terms = text("Terms of Use", 15, 0xFF7FA2FF);
+        terms.setPadding(0, dp(16), 0, dp(4));
+        terms.setOnClickListener(v -> showTerms(false));
+        box.addView(terms);
         dialog().setTitle("Settings").setView(box).setPositiveButton("Done", null).show();
+    }
+
+    private static final String TERMS_TEXT =
+            "TV Remote is FREE, with NO ADS, no purchases and no tracking.\n\n"
+                    + "By using this app you agree:\n\n"
+                    + "🚫  Do not clone or copy the app, its code or its design.\n"
+                    + "🚫  Do not reverse-engineer, decompile or modify the app.\n"
+                    + "🚫  Do not re-upload, sell or rebrand the APK. Share the official GitHub link instead.\n"
+                    + "✅  Use it only with TVs you own or may control.\n\n"
+                    + "The app is provided as is, without warranty.\n\n"
+                    + "© 2026 mbnetworku. All rights reserved.\n"
+                    + "Full terms: github.com/mbnetworku/Android-TV-remote-application./blob/main/TERMS.md";
+
+    /** Terms of Use. On first launch the user must agree before using the remote. */
+    // ---------------------------------------------------------------- pairing code / PIN
+
+    private AlertDialog codeDialog;
+    private TvController codeDialogFor;
+    private TextView codeMessage;
+
+    /** Asks for the PIN (receiver app) or the 6-character code (Google TV) shown on the TV. */
+    private void showCodeDialog(TvController c, DeviceStore.Device d, String message) {
+        if (codeDialog != null && codeDialog.isShowing() && codeDialogFor == c) {
+            codeMessage.setText(message); // e.g. "Wrong PIN, try again"
+            return;
+        }
+        boolean pin = "PIN".equals(c.getCodeKind());
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(24), dp(8), dp(24), 0);
+        codeMessage = text(message, 14, 0xFFC9CED8);
+        box.addView(codeMessage);
+        EditText field = new EditText(this);
+        field.setSingleLine(true);
+        field.setTextSize(28);
+        field.setGravity(Gravity.CENTER);
+        field.setLetterSpacing(0.3f);
+        field.setInputType(pin ? InputType.TYPE_CLASS_NUMBER
+                : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        field.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(pin ? 4 : 6),
+                new android.text.InputFilter.AllCaps()});
+        field.setHint(pin ? "0000" : "A1B2C3");
+        box.addView(field);
+        final boolean[] answered = {false};
+        AlertDialog dlg = dialog()
+                .setTitle((pin ? "Enter PIN" : "Pair with TV") + " · " + d.label())
+                .setView(box)
+                .setPositiveButton("Connect", null)
+                .setNegativeButton("Cancel", (x, y) -> {
+                    answered[0] = true;
+                    c.submitCode(null);
+                })
+                .setCancelable(false)
+                .create();
+        dlg.setOnShowListener(x -> dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(b -> {
+            String code = field.getText().toString().trim();
+            if (code.length() != (pin ? 4 : 6)) {
+                field.setError(pin ? "4 digits" : "6 characters");
+                return;
+            }
+            answered[0] = true;
+            c.submitCode(code);
+            dlg.dismiss();
+        }));
+        dlg.setOnDismissListener(x -> {
+            if (codeDialog == dlg) codeDialog = null;
+        });
+        if (dlg.getWindow() != null) {
+            dlg.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
+        codeDialog = dlg;
+        codeDialogFor = c;
+        dlg.show();
+        field.requestFocus();
+    }
+
+    private void showTerms(boolean firstRun) {
+        TextView body = text(TERMS_TEXT, 14, 0xFFECEFF4);
+        body.setPadding(dp(24), dp(8), dp(24), dp(8));
+        body.setLineSpacing(0, 1.15f);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(body);
+        AlertDialog.Builder b = dialog().setTitle("Terms of Use").setView(scroll);
+        if (firstRun) {
+            b.setCancelable(false)
+                    .setPositiveButton("I agree", (d, w) -> prefs.edit().putBoolean("terms_ok", true).apply())
+                    .setNegativeButton("Exit", (d, w) -> finish());
+        } else {
+            b.setPositiveButton("Close", null);
+        }
+        b.show();
     }
 
     /** One dot per TV, colored by its connection; the selected one is larger. */

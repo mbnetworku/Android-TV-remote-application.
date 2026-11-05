@@ -61,13 +61,16 @@ public final class NetworkScanner {
         pool = null;
     }
 
+    /** Receiver app (6470), Google TV remote (6466) or ADB (the given port). */
     private static boolean probe(String host, int port) {
-        try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress(host, port), 500);
-            return true;
-        } catch (Exception e) {
-            return false;
+        for (int p : new int[]{TvController.RECEIVER_PORT, 6466, port}) {
+            try (Socket s = new Socket()) {
+                s.connect(new InetSocketAddress(host, p), 400);
+                return true;
+            } catch (Exception ignored) {
+            }
         }
+        return false;
     }
 
     /** "192.168.1." for the phone's current network, or null if it has no IPv4 address. */

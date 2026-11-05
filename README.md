@@ -20,20 +20,44 @@ No IP typing · Many TVs · Instant response · Liquid glass design
   <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20APK-Latest%20version-000000?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=1F1F1F" height="56" alt="Download APK"/>
 </a>
 
-<sub>Free · ~75 KB · Android 5.0 and newer · <a href="https://github.com/mbnetworku/Android-TV-remote-application./releases">all versions</a></sub>
+<sub>📱 For your <b>phone</b> · Free · ~90 KB · Android 5.0 and newer · <a href="https://github.com/mbnetworku/Android-TV-remote-application./releases">all versions</a></sub>
 
 <br/><br/>
 
-[How it works](TECHNICAL.md) · [Security](SECURITY.md)
+<a href="https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote-Receiver.apk">
+  <img src="https://img.shields.io/badge/📺%20TV%20RECEIVER-Optional%20·%20no%20developer%20options-000000?style=for-the-badge&labelColor=1F1F1F" height="40" alt="Download TV Receiver"/>
+</a>
+
+<sub>📺 For your <b>TV</b>, only if it has no Google TV pairing and you don't want to turn on debugging. See Step 2.</sub>
+
+<br/><br/>
+
+[How it works](TECHNICAL.md) · [Security](SECURITY.md) · [Terms of Use](TERMS.md)
 
 </div>
+
+> [!IMPORTANT]
+> **Free forever · No ads · No tracking**
+>
+> By downloading or using TV Remote you agree to the **[Terms of Use](TERMS.md)**:
+> - 🚫 **Do not clone** or copy this repository or its code.
+> - 🚫 **Do not reverse-engineer**, decompile or modify the app.
+> - 🚫 **Do not re-upload, sell or rebrand** the APK. Share the official link instead.
+>
+> © 2026 mbnetworku. All rights reserved.
 
 ---
 
 ## 🤔 What is it?
 
 TV Remote turns your phone into a remote control for your Android TV or TV box over Wi-Fi.
-It also works on TVs that **can't use the Google TV remote** (many Realtek, Amlogic and other non-certified TVs and boxes).
+It works on **every** Android TV, **with or without developer options**, and picks the best way to connect by itself:
+
+| Your TV | How it connects | Developer options? |
+|---|---|---|
+| 🟢 Google-certified Android TV / Google TV (Sony, TCL, Philips, Xiaomi, Chromecast, Shield…) | **Google TV pairing**: type the code shown on the TV | ❌ Not needed |
+| 🟢 Any Android TV or box (Realtek, Amlogic, MBOX…) | **TV Receiver app**: install once, type the PIN shown on the TV | ❌ Not needed |
+| 🟢 Any Android TV with debugging on | **Network debugging**: fastest, full features | ✅ Needed |
 
 > 💡 **Lost your remote? Batteries dead?** Just open the app.
 
@@ -106,7 +130,7 @@ No account, no internet, no ads, no tracking. Everything stays on your Wi-Fi.
 
 ```mermaid
 flowchart LR
-    A["📥 1. Install the app<br/>on your phone"] --> B["📺 2. Turn on<br/>network debugging<br/>on the TV"]
+    A["📥 1. Install the app<br/>on your phone"] --> B["📺 2. Prepare the TV<br/>(often nothing to do)"]
     B --> C["✅ 3. Open the app<br/>your TV appears"]
 ```
 
@@ -124,10 +148,20 @@ Needs **Android 5.0** or newer.
 <summary><b>📺 Step 2: Prepare your TV</b> (one time only)</summary>
 <br/>
 
+Make sure the TV and phone use the **same Wi-Fi**, then pick **one** of these:
+
+**🅰️ Google TV / certified Android TV: nothing to install**
+Skip to Step 3. The phone shows a box for the 6-character code your TV displays.
+
+**🅱️ Any other TV or box: install the TV Receiver (no developer options)**
+1. Get **[TVRemote-Receiver.apk](https://github.com/mbnetworku/Android-TV-remote-application./releases/latest/download/TVRemote-Receiver.apk)** onto the TV, with a USB stick or the free **Downloader** app.
+2. Open **TV Remote Receiver** on the TV and press **Open Accessibility settings**.
+3. Switch **TV Remote Receiver** **ON**.
+
+**🅲 Or: turn on network debugging (fastest, full features)**
 1. On the TV open **Settings → Device Preferences → About**.
 2. Click **Build** 7 times until you see *"You are now a developer"*.
 3. Go back to **Developer options** and turn on **USB debugging** / **Network debugging**.
-4. Make sure the TV and phone use the **same Wi-Fi**.
 </details>
 
 <details>
@@ -135,7 +169,10 @@ Needs **Android 5.0** or newer.
 <br/>
 
 1. Open **TV Remote**. It searches your Wi-Fi and lists your TVs.
-2. If the TV shows **"Allow debugging?"**, tick **Always allow** and press **Allow**.
+2. The first time, the TV shows one of these:
+   - a **6-character code** (Google TV): type it on the phone;
+   - a **4-digit PIN** (TV Receiver): type it on the phone;
+   - **"Allow debugging?"**: tick **Always allow** and press **Allow**.
 3. Done. The dot next to the TV name turns 🟢 green.
 </details>
 
@@ -165,7 +202,7 @@ Needs **Android 5.0** or newer.
 <summary><b>My TV doesn't show up</b></summary>
 <br/>
 
-- Check that **network debugging** is on (Step 2).
+- If it isn't a Google TV, make sure the **TV Receiver** is switched on, or **network debugging** is on (Step 2).
 - Check that the phone and TV are on the **same Wi-Fi** (not a guest network).
 - Tap the TV name → **Scan**, or type the TV's IP (TV: *Settings → Network → About*).
 </details>
@@ -200,7 +237,8 @@ That depends on the TV. Not every TV supports every key.
 |---|---|
 | 🛠️ [TECHNICAL.md](TECHNICAL.md) | Architecture and how it works inside |
 | 🔒 [SECURITY.md](SECURITY.md) | Privacy, permissions and how to report problems |
-| ⚖️ [LICENSE](LICENSE) | Usage terms |
+| 📜 [TERMS.md](TERMS.md) | Terms of Use: free, no ads, no cloning, no reverse engineering |
+| ⚖️ [LICENSE](LICENSE) | Legal license |
 
 ---
 
